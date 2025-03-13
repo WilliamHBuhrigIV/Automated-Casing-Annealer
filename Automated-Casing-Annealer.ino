@@ -1,4 +1,11 @@
 #include <Keypad.h>
+#include <LiquidCrystal.h>
+//#include <SD.h> //TODO for Backup of Settings over Powercycle
+
+////////////////////////////////////////////////////////////////////////////////
+/// Keypad Instantiation
+////////////////////////////////////////////////////////////////////////////////
+
 const byte ROWS = 4;
 const byte COLS = 4;
 const char hexaKeys[ROWS][COLS] = {
@@ -11,7 +18,10 @@ const byte rowPins[ROWS] = {22,24,26,28};
 const byte colPins[COLS] = {23,25,27,29};
 const Keypad keypad = Keypad(makeKeymap(hexaKeys),rowPins,colPins,ROWS,COLS);
 
-#include <LiquidCrystal.h>
+////////////////////////////////////////////////////////////////////////////////
+/// Liquid Crystal Display Instatiation
+////////////////////////////////////////////////////////////////////////////////
+
 const int pin_d4 = 4;
 const int pin_d5 = 5;
 const int pin_d6 = 6;
@@ -21,6 +31,9 @@ const int pin_EN = 9;
 //const int pin_BL = 10;
 LiquidCrystal lcd( pin_RS,  pin_EN,  pin_d4,  pin_d5,  pin_d6,  pin_d7);
 
+////////////////////////////////////////////////////////////////////////////////
+/// Common Variable Instatiation
+////////////////////////////////////////////////////////////////////////////////
 
 unsigned long startDisplayMillis;
 unsigned long startDisplayInfoSwapMillis;
@@ -29,11 +42,19 @@ unsigned long currentMillis;
 const int Display_Refresh_Period = 300;
 const int Display_Info_Swap_Period = 4*1000;
 
+////////////////////////////////////////////////////////////////////////////////
+/// Test Variable Instatiation
+////////////////////////////////////////////////////////////////////////////////
+
 int Session_Total_Count = 0, Water_Temperature = 72, IR_Temperature = 72, Banner_Offset = 0;
 double Heating_Period = 1, Cooling_Period = 1;
 bool Heat_Active = false, Display_Info_Swap = false;
 bool HEAT_PAUSE_STATE = true, COMMAND_REQUEST = false, ERROR_STATE = false;
 String Active_State = String("PAUSED........");
+
+////////////////////////////////////////////////////////////////////////////////
+/// Run Time Code
+////////////////////////////////////////////////////////////////////////////////
 
 void lcdSetup(){
   lcd.begin(16,2);
@@ -48,7 +69,7 @@ void lcdSetup(){
 
 void setup() {
   lcdSetup();
-  Serial.begin(57600);
+  Serial.begin(115200,SERIAL_8E1);
 }
 
 void lcdMainScreen(String INFO_1, String tag_INFO_2, int INFO_2, String tag_INFO_3, double INFO_3, String tag_INFO_4, int INFO_4){
@@ -100,9 +121,9 @@ void lcdMainScreen(String INFO_1, String tag_INFO_2, int INFO_2, String tag_INFO
   lcd.print(string_INFO_1+" "+tag_INFO_2+string_INFO_2);
   lcd.setCursor(0, 1);
   lcd.print(tag_INFO_3+string_INFO_3+" "+tag_INFO_4+string_INFO_4);
+  Serial.print("\033[0H\033[0J");
   Serial.println(string_INFO_1+" "+tag_INFO_2+string_INFO_2);
   Serial.println(tag_INFO_3+string_INFO_3+" "+tag_INFO_4+string_INFO_4);
-  Serial.println("----------------");
 }
 
 void lcdCommandScreen(String Command_String){
@@ -110,9 +131,9 @@ void lcdCommandScreen(String Command_String){
   lcd.print("COMMAND ENTRY:");
   lcd.setCursor(0, 1);
   lcd.print(Command_String);
+  Serial.print("\033[0H\033[0J");
   Serial.println("COMMAND ENTRY:");
   Serial.println(Command_String);
-  Serial.println("----------------");
 }
 
 void commandSequence(){
@@ -267,9 +288,9 @@ void loop() {
     lcd.print("ERROR STATE");
     lcd.setCursor(0, 1);
     lcd.print("ACTIVE SHUTDOWN");
+    Serial.print("\033[0H\033[0J");
     Serial.println("ERROR STATE");
     Serial.println("ACTIVE SHUTDOWN");
-    Serial.println("----------------");
     while(true) {}
   }
 }
