@@ -1,9 +1,12 @@
+#include "display_main.h"
+
+/*
 #include <Keypad.h>
 #include <LiquidCrystal.h>
 //#include <SD.h> //TODO for Backup of Settings over Powercycle
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Keypad Instantiation
+/// Global Keypad Setup
 ////////////////////////////////////////////////////////////////////////////////
 
 const byte ROWS = 4;
@@ -17,115 +20,50 @@ const char hexaKeys[ROWS][COLS] = {
 const byte rowPins[ROWS] = {22,24,26,28};
 const byte colPins[COLS] = {23,25,27,29};
 const Keypad keypad = Keypad(makeKeymap(hexaKeys),rowPins,colPins,ROWS,COLS);
+*/
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Liquid Crystal Display Instatiation
+/// Global Liquid Crystal Display Setup
 ////////////////////////////////////////////////////////////////////////////////
 
-const int pin_d4 = 4;
-const int pin_d5 = 5;
-const int pin_d6 = 6;
-const int pin_d7 = 7;
-const int pin_RS = 8;
-const int pin_EN = 9;
-//const int pin_BL = 10;
-LiquidCrystal lcd( pin_RS,  pin_EN,  pin_d4,  pin_d5,  pin_d6,  pin_d7);
+uint8_t pin_d0 = 4;
+uint8_t pin_d1 = 5;
+uint8_t pin_d2 = 6;
+uint8_t pin_d3 = 7;
+uint8_t pin_rs = 8;
+uint8_t pin_en = 9;
+Display* display = new Display(pin_rs, pin_en, pin_d0, pin_d1, pin_d2, pin_d3);
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Common Variable Instatiation
+/// Global Variable Setup
 ////////////////////////////////////////////////////////////////////////////////
 
+/*
 unsigned long startDisplayMillis;
 unsigned long startDisplayInfoSwapMillis;
 unsigned long startHeatMillis, endHeatMillis;
 unsigned long currentMillis;
 const int Display_Refresh_Period = 300;
 const int Display_Info_Swap_Period = 4*1000;
+*/
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Test Variable Instatiation
+/// Global Test Variable Setup
 ////////////////////////////////////////////////////////////////////////////////
 
+/*
 int Session_Total_Count = 0, Water_Temperature = 72, IR_Temperature = 72, Banner_Offset = 0;
 double Heating_Period = 1, Cooling_Period = 1;
 bool Heat_Active = false, Display_Info_Swap = false;
 bool HEAT_PAUSE_STATE = true, COMMAND_REQUEST = false, ERROR_STATE = false;
 String Active_State = String("PAUSED........");
+*/
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Run Time Code
+/// Global Function Setup
 ////////////////////////////////////////////////////////////////////////////////
 
-void lcdSetup(){
-  lcd.begin(16,2);
-  lcd.noAutoscroll();
-  lcd.noBlink();
-  lcd.noCursor();
-  lcd.clear();
-  lcd.setCursor(0,0);
-  lcd.print("Initializing...");
-  startDisplayMillis = millis();
-}
-
-void setup() {
-  lcdSetup();
-  Serial.begin(115200,SERIAL_8E1);
-}
-
-void lcdMainScreen(String INFO_1, String tag_INFO_2, int INFO_2, String tag_INFO_3, double INFO_3, String tag_INFO_4, int INFO_4){
-  lcd.clear();
-  if(INFO_1.length() > 7){
-    Banner_Offset += 1;
-  }else{
-    Banner_Offset = 0;
-  }
-  String string_INFO_1 = String();
-  for(int i=0;i<7;i++){
-    string_INFO_1 += INFO_1.charAt((i+Banner_Offset) % INFO_1.length());
-  }
-  
-  String string_INFO_2 = String();
-  if(INFO_2 <= 9){
-    string_INFO_2 = "   "+String(INFO_2);
-  }else if(INFO_2 <= 99){
-    string_INFO_2 = "  "+String(INFO_2);
-  }else if(INFO_2 <= 999){
-    string_INFO_2 = " "+String(INFO_2);
-  }else if(INFO_2 <= 9999){
-    string_INFO_2 = String(INFO_2);
-  }else{
-    string_INFO_2 = "ERRR";
-  }
-  String string_INFO_3 = String();
-  if(INFO_3 <= 9.9){
-    string_INFO_3 = String(INFO_3,1);
-  }else if(INFO_3 <= 99){
-    string_INFO_3 = " "+String(INFO_3,0);
-  }else if(INFO_3 <= 999){
-    string_INFO_3 = String(INFO_3,0);
-  }else{
-    string_INFO_3 = "ERR";
-  }
-  String string_INFO_4 = String();
-  if(INFO_4 <= 9){
-    string_INFO_4 = "   "+String(INFO_4);
-  }else if(INFO_4 <= 99){
-    string_INFO_4 = "  "+String(INFO_4);
-  }else if(INFO_4 <= 999){
-    string_INFO_4 = " "+String(INFO_4);
-  }else if(INFO_4 <= 9999){
-    string_INFO_4 = String(INFO_4);
-  }else{
-    string_INFO_4 = "ERRR";
-  }
-  lcd.print(string_INFO_1+" "+tag_INFO_2+string_INFO_2);
-  lcd.setCursor(0, 1);
-  lcd.print(tag_INFO_3+string_INFO_3+" "+tag_INFO_4+string_INFO_4);
-  Serial.print("\033[0H\033[0J");
-  Serial.println(string_INFO_1+" "+tag_INFO_2+string_INFO_2);
-  Serial.println(tag_INFO_3+string_INFO_3+" "+tag_INFO_4+string_INFO_4);
-}
-
+/*
 void lcdCommandScreen(String Command_String){
   lcd.clear();
   lcd.print("COMMAND ENTRY:");
@@ -216,7 +154,53 @@ void commandSequence(){
       break;
   }
 }
+*/
 
+////////////////////////////////////////////////////////////////////////////////
+/// Run Time Code
+////////////////////////////////////////////////////////////////////////////////
+
+#include "state.h"
+state active_state = {
+  "Initializing...", 
+  {
+    true,
+    14,
+    { "TRYING........", -1, 6, 0 },
+    { 30, 0, millis() }
+  }
+};
+
+void setup() {
+  Serial.begin(115200,SERIAL_8E1);
+  //..
+}
+
+void loop() {
+  int IR_Temperature = 700, Water_Temperature = 60, Session_Total_Count = 0;
+  double Heating_Period = 1.0, Cooling_Period = 1.0;
+
+  if(active_state.display.swap){
+    display->DisplayMainScreen(
+      active_state.display,
+      "TC: ", IR_Temperature,
+      "CP: ", Cooling_Period,
+      "WT: ", Water_Temperature
+    );
+  }else{
+    display->DisplayMainScreen(
+      active_state.display,
+      "TC: ", IR_Temperature,
+      "HP: ", Heating_Period,
+      "#C: ", Session_Total_Count);
+  }
+
+  // display->Error();
+  // while(true) {}
+  //..
+}
+
+/*
 void loop() {
   // Gets USER input to Keypad
   char key = keypad.getKey();
@@ -294,3 +278,4 @@ void loop() {
     while(true) {}
   }
 }
+*/
