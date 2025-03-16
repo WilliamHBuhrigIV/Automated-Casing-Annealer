@@ -9,13 +9,7 @@
 
 class InputPad {
     public:
-        InputPad(
-            char *keyMap, 
-            byte *row, 
-            byte *col, 
-            byte numRows,
-            byte numCols
-        );
+        InputPad( Keypad* keypad );
         char GetKeyState();
         void CommandSequence(state& active_state);
         // ..

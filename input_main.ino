@@ -5,18 +5,14 @@
 /// 
 ////////////////////////////////////////////////////////////////////////////////
 
-InputPad::InputPad(
-    char *keyMap, 
-    byte *row, 
-    byte *col, 
-    byte numRows,
-    byte numCols
-) {
-    keypad = new Keypad(keyMap,row,col,numRows,numCols);
+InputPad::InputPad( Keypad* keypad ) {
+    this->keypad = keypad;
     return;
 }
 char InputPad::GetKeyState() {
-    return keypad->getKey();
+    char key = keypad->getKey();
+    Serial.print(key);
+    return key;
 }
 void InputPad::CommandSequence(state& active_state) {
     String Command_String = String("");
@@ -24,19 +20,18 @@ void InputPad::CommandSequence(state& active_state) {
     while(true){
         char key = keypad->getKey();
         if(key){
-        if (key == '#'){
-            break;
+            if (key == '#'){
+                break;
+            }
+            if((key == '*') && (
+                Command_String.lastIndexOf('*') == Command_String.length()-1
+            )){
+                Command_String.remove(Command_String.length()-2,2);
+            }else{
+                Command_String = Command_String+String(key);
+            }
+            display->DisplayCommandScreen(Command_String);
         }
-        if((key == '*') && (
-            Command_String.lastIndexOf('*') == Command_String.length()-1
-        )){
-            Command_String.remove(Command_String.length()-2,2);
-        }else{
-            Command_String = Command_String+String(key);
-        }
-        display->DisplayCommandScreen(Command_String);
-        }
-        
     }
     String Command_String_Prefix = String();
     String Command_String_Whole = String();
@@ -70,55 +65,85 @@ void InputPad::CommandSequence(state& active_state) {
     for(int i=0;i<sizeof(Command_String_Prefix_Char_Array)+1;i++){
         Command_String_Prefix_Value += Command_String_Prefix_Char_Array[i];
     }
-    Serial.println(Command_String_Prefix_Value);
     switch(Command_String_Prefix_Value){
         case 'A':
-            // 
+            switch(active_state.previous_request) {
+                case REQUESTS::OPERATE:
+                    active_state.previous_request = REQUESTS::OPERATE;
+                    active_state.request = REQUESTS::PAUSED;
+                    break;
+                case REQUESTS::PAUSED:
+                    active_state.previous_request = REQUESTS::PAUSED;
+                    active_state.request = REQUESTS::OPERATE;
+                    break;
+            }
             break;
         case 'A'+'A':
-            // ERROR_STATE = true;
+            active_state.request = REQUESTS::ERROR;
             break;
         case 'D'+'D':
-            // if(Command_String_Whole.toInt()){
-            //     Water_Temperature = Command_String_Whole.toInt();
-            // }
+            if(Command_String_Whole.toInt()){
+                active_state.opperation.cooling.temperature_water =
+                    Command_String_Whole.toInt();
+            }
             break;
         case 'B':
-            // if(Command_String_Whole.toInt()){
-            //     IR_Temperature = Command_String_Whole.toInt();
-            // }
+            if(Command_String_Whole.toInt()){
+                active_state.opperation.heating.temperature_ir =
+                    Command_String_Whole.toInt();
+            }
             break;
         case 'C':
-            // if(
-            //     Command_String_Decimal.toDouble() || 
-            //     Command_String_Whole.toInt()
-            // ){
-            //     Heating_Period = Command_String_Whole.toInt() + (
-            //         Command_String_Decimal.toDouble() /
-            //         pow(10,Command_String_Decimal.length())
-            //     );
-            // }else{
-            //     HEAT_PAUSE_STATE = !HEAT_PAUSE_STATE;
-            // }
+            if(
+                Command_String_Decimal.toDouble() || 
+                Command_String_Whole.toInt()
+            ){
+                active_state.opperation.heating.period =
+                    Command_String_Whole.toInt() + (
+                        Command_String_Decimal.toDouble() /
+                        pow(10,Command_String_Decimal.length())
+                    );
+            }else{
+                switch(active_state.previous_request) {
+                    case REQUESTS::OPERATE:
+                        active_state.previous_request = REQUESTS::OPERATE;
+                        active_state.request = REQUESTS::PAUSED;
+                        break;
+                    case REQUESTS::PAUSED:
+                        active_state.previous_request = REQUESTS::PAUSED;
+                        active_state.request = REQUESTS::OPERATE;
+                        break;
+                }
+            }
             break;
         case 'C'+'C':
-            // if(
-            //     Command_String_Decimal.toDouble() ||
-            //     Command_String_Whole.toInt()
-            // ){
-            //     Cooling_Period = Command_String_Whole.toInt() + (
-            //         Command_String_Decimal.toDouble() /
-            //         pow(10,Command_String_Decimal.length())
-            //     );
-            // }else{
-            //     HEAT_PAUSE_STATE = !HEAT_PAUSE_STATE;
-            // }
+            if(
+                Command_String_Decimal.toDouble() ||
+                Command_String_Whole.toInt()
+            ){
+                active_state.opperation.cooling.period =
+                    Command_String_Whole.toInt() + (
+                        Command_String_Decimal.toDouble() /
+                        pow(10,Command_String_Decimal.length())
+                    );
+            }else{
+                switch(active_state.previous_request) {
+                    case REQUESTS::OPERATE:
+                        active_state.previous_request = REQUESTS::OPERATE;
+                        active_state.request = REQUESTS::PAUSED;
+                        break;
+                    case REQUESTS::PAUSED:
+                        active_state.previous_request = REQUESTS::PAUSED;
+                        active_state.request = REQUESTS::OPERATE;
+                        break;
+                }
+            }
         case 'D':
-            // if(Command_String_Whole.toInt()){
-            //     Session_Total_Count = Command_String_Whole.toInt();
-            // }else{
-            //     Session_Total_Count = 0;
-            // }
+            if(Command_String_Whole.toInt()){
+                active_state.opperation.count = Command_String_Whole.toInt();
+            }else{
+                active_state.opperation.count = 0;
+            }
             break;
     }
 }

@@ -22,16 +22,21 @@ enum FLAGS {
 
 struct state {
     REQUESTS request;
+    REQUESTS previous_request;
     struct state_opperation {
         FLAGS flag;
-    } opperation;
-    struct state_values {
-        double heating_period; // TODO Storage
-        double cooling_period; // TODO Storage
-        int temperature_ir;
-        int temperature_water;
         int count; // TODO Storage
-    } values;
+        struct state_opperation_heating {
+            double period; // TODO Storage
+            int temperature_ir;
+            unsigned long time_last;
+        } heating;
+        struct state_opperation_cooling {
+            double period; // TODO Storage
+            int temperature_water;
+            unsigned long time_last;
+        } cooling;
+    } opperation;
     struct state_display {
         struct state_display_swap {
             bool value;

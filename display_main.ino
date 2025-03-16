@@ -31,6 +31,9 @@ void Display::Error() {
     display->print("ERROR STATE");
     display->setCursor(0, 1);
     display->print("ACTIVE SHUTDOWN");
+    Serial.print("\033[0H\033[0J");
+    Serial.println("ERROR STATE");
+    Serial.println("ACTIVE SHUTDOWN");
     return;
 }
 void Display::DisplayMainScreen(
