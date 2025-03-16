@@ -31,6 +31,7 @@ void Display::Error() {
     display->print("ERROR STATE");
     display->setCursor(0, 1);
     display->print("ACTIVE SHUTDOWN");
+    return;
 }
 void Display::DisplayMainScreen(
     state::state_display& state_display,
@@ -110,6 +111,7 @@ void Display::DisplayMainScreen(
     Serial.print("\033[0H\033[0J");
     Serial.println(string_state_display+" "+tag_INFO_2+string_INFO_2);
     Serial.println(tag_INFO_3+string_INFO_3+" "+tag_INFO_4+string_INFO_4);
+    return;
 }
 void Display::DisplayCommandScreen(String Command_String){
     display->clear();
@@ -119,4 +121,5 @@ void Display::DisplayCommandScreen(String Command_String){
     Serial.print("\033[0H\033[0J");
     Serial.println("COMMAND ENTRY:");
     Serial.println(Command_String);
+    return;
 }

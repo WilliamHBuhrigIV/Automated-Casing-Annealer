@@ -5,10 +5,25 @@
 /// 
 ////////////////////////////////////////////////////////////////////////////////
 
+enum FLAGS {
+    INITIAL,
+    COMMAND,
+    HEATING,
+    COOLING,
+    PAUSING,
+    HALTING
+};
+
 struct state {
-    String name;
+    FLAGS flag;
+    struct state_values {
+        double heating_period;
+        double cooling_period;
+        int temperature_ir;
+        int temperature_water;
+        int count;
+    } values;
     struct state_display {
-        
         struct state_display_swap {
             bool value;
             int frame_period;

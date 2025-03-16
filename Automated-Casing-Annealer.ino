@@ -1,25 +1,40 @@
 #include "display_main.h"
-
-/*
-#include <Keypad.h>
+#include "input_main.h"
+#include "state.h"
 //#include <SD.h> //TODO for Backup of Settings over Powercycle
+
+////////////////////////////////////////////////////////////////////////////////
+/// Initial State Setup
+////////////////////////////////////////////////////////////////////////////////
+
+int IR_Temperature = 700, Water_Temperature = 60, Session_Total_Count = 0;
+double Heating_Period = 1.0, Cooling_Period = 1.0;
+
+state active_state = {
+  FLAGS::INITIAL,
+  { 1.0, 1.0, 20, 20, 0 },
+  {
+    true,
+    14,
+    { "Initializing...", -1, 0, 0 },
+    { 1, 0, millis() }
+  }
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Global Keypad Setup
 ////////////////////////////////////////////////////////////////////////////////
 
-const byte ROWS = 4;
-const byte COLS = 4;
-const char hexaKeys[ROWS][COLS] = {
+char* hexaKeys[4][4] = {
   {'1','2','3','A'},
   {'4','5','6','B'},
   {'7','8','9','C'},
   {'*','0','#','D'}
 };
-const byte rowPins[ROWS] = {22,24,26,28};
-const byte colPins[COLS] = {23,25,27,29};
-const Keypad keypad = Keypad(makeKeymap(hexaKeys),rowPins,colPins,ROWS,COLS);
-*/
+byte rowPins[4] = {22,24,26,28};
+byte colPins[4] = {23,25,27,29};
+InputPad* keypad = new InputPad(makeKeymap(hexaKeys),rowPins,colPins,4,4);
+char key = keypad->GetKeyState();
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Global Liquid Crystal Display Setup
@@ -34,45 +49,10 @@ uint8_t pin_en = 9;
 Display* display = new Display(pin_rs, pin_en, pin_d0, pin_d1, pin_d2, pin_d3);
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Global Variable Setup
-////////////////////////////////////////////////////////////////////////////////
-
-/*
-unsigned long startDisplayMillis;
-unsigned long startDisplayInfoSwapMillis;
-unsigned long startHeatMillis, endHeatMillis;
-unsigned long currentMillis;
-const int Display_Refresh_Period = 300;
-const int Display_Info_Swap_Period = 4*1000;
-*/
-
-////////////////////////////////////////////////////////////////////////////////
-/// Global Test Variable Setup
-////////////////////////////////////////////////////////////////////////////////
-
-/*
-int Session_Total_Count = 0, Water_Temperature = 72, IR_Temperature = 72, Banner_Offset = 0;
-double Heating_Period = 1, Cooling_Period = 1;
-bool Heat_Active = false, Display_Info_Swap = false;
-bool HEAT_PAUSE_STATE = true, COMMAND_REQUEST = false, ERROR_STATE = false;
-String Active_State = String("PAUSED........");
-*/
-
-////////////////////////////////////////////////////////////////////////////////
 /// Global Function Setup
 ////////////////////////////////////////////////////////////////////////////////
 
 /*
-void lcdCommandScreen(String Command_String){
-  lcd.clear();
-  lcd.print("COMMAND ENTRY:");
-  lcd.setCursor(0, 1);
-  lcd.print(Command_String);
-  Serial.print("\033[0H\033[0J");
-  Serial.println("COMMAND ENTRY:");
-  Serial.println(Command_String);
-}
-
 void commandSequence(){
   String Command_String = String("");
   lcdCommandScreen(Command_String);
@@ -159,43 +139,56 @@ void commandSequence(){
 /// Run Time Code
 ////////////////////////////////////////////////////////////////////////////////
 
-#include "state.h"
-state active_state = {
-  "Initializing...", 
-  {
-    true,
-    14,
-    { "TRYING........", -1, 6, 0 },
-    { 30, 0, millis() }
-  }
-};
-
 void setup() {
-  // HardwareSerial* ser = new Serial(115200,SERIAL_8E1);
   Serial.begin(115200,SERIAL_8E1);
   //..
 }
 
 void loop() {
-  int IR_Temperature = 700, Water_Temperature = 60, Session_Total_Count = 0;
-  double Heating_Period = 1.0, Cooling_Period = 1.0;
+  switch(active_state.flag) {
+    case FLAGS::INITIAL:
+      active_state.flag = FLAGS::PAUSING;
+    case FLAGS::PAUSING:
+      active_state.display.active.name = "PAUSED........";
+      break;
+    case FLAGS::COMMAND:
+      active_state.display.active.name = "COMMAND........";
+      break;
+    case FLAGS::HEATING:
+      active_state.display.active.name = "HEATING........";
+      break;
+    case FLAGS::COOLING:
+      active_state.display.active.name = "COOLING........";
+      break;
+    case FLAGS::HALTING:
+      active_state.display.active.name = "HALTING........";
+      display->Error();
+      while(true) {};
+  }
+  
   if(active_state.display.swap){
     display->DisplayMainScreen(
       active_state.display,
-      "TC: ", IR_Temperature,
-      "CP: ", Cooling_Period,
-      "WT: ", Water_Temperature
+      "TC: ", active_state.values.temperature_ir,
+      "CP: ", active_state.values.cooling_period,
+      "WT: ", active_state.values.temperature_water
     );
   }else{
     display->DisplayMainScreen(
       active_state.display,
-      "TC: ", IR_Temperature,
-      "HP: ", Heating_Period,
-      "#C: ", Session_Total_Count);
+      "TC: ", active_state.values.temperature_ir,
+      "HP: ", active_state.values.heating_period,
+      "#C: ", active_state.values.count
+    );
   }
-  // display->Error();
-  // while(true) {}
-  //..
+  
+  key = keypad->GetKeyState();
+  if (key) {
+    Serial.print(String(key));
+  }
+  if (key == '6'){
+    active_state.flag = FLAGS::COMMAND;
+  }
 }
 
 /*
@@ -250,29 +243,7 @@ void loop() {
     }
   }
 
-  // Updates Display if ELAPSED TIME (ms) is GREATER than DISPLAY REFRESH PERIOD (ms)
-  currentMillis = millis();
-  if((currentMillis-startDisplayMillis) > Display_Refresh_Period || ERROR_STATE){
-    startDisplayMillis = millis();
-    if((currentMillis-startDisplayInfoSwapMillis) > Display_Info_Swap_Period){
-      Display_Info_Swap = !Display_Info_Swap;
-      startDisplayInfoSwapMillis = millis();
-    }
-    if(Display_Info_Swap){
-      lcdMainScreen(Active_State,"TC: ", IR_Temperature,"CP: ", Cooling_Period,"WT: ", Water_Temperature);
-    }else{
-      lcdMainScreen(Active_State,"TC: ", IR_Temperature,"HP: ", Heating_Period,"#C: ", Session_Total_Count);
-    }
-  }
-
   if(ERROR_STATE){
-    lcd.clear();
-    lcd.print("ERROR STATE");
-    lcd.setCursor(0, 1);
-    lcd.print("ACTIVE SHUTDOWN");
-    Serial.print("\033[0H\033[0J");
-    Serial.println("ERROR STATE");
-    Serial.println("ACTIVE SHUTDOWN");
     while(true) {}
   }
 }

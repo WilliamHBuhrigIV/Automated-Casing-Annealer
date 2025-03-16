@@ -8,7 +8,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 class Display {
-    // LiquidCrystal display;
     public:
         Display(
             uint8_t pin_rs,
