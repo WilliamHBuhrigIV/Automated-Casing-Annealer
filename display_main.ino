@@ -107,7 +107,16 @@ void Display::DisplayMainScreen(
     display->print(string_state_display+" "+tag_INFO_2+string_INFO_2);
     display->setCursor(0, 1);
     display->print(tag_INFO_3+string_INFO_3+" "+tag_INFO_4+string_INFO_4);
-    // Serial.print("\033[0H\033[0J");
-    // Serial.println(string_state_display+" "+tag_INFO_2+string_INFO_2);
-    // Serial.println(tag_INFO_3+string_INFO_3+" "+tag_INFO_4+string_INFO_4);
+    Serial.print("\033[0H\033[0J");
+    Serial.println(string_state_display+" "+tag_INFO_2+string_INFO_2);
+    Serial.println(tag_INFO_3+string_INFO_3+" "+tag_INFO_4+string_INFO_4);
+}
+void Display::DisplayCommandScreen(String Command_String){
+    display->clear();
+    display->print("COMMAND ENTRY:");
+    display->setCursor(0, 1);
+    display->print(Command_String);
+    Serial.print("\033[0H\033[0J");
+    Serial.println("COMMAND ENTRY:");
+    Serial.println(Command_String);
 }

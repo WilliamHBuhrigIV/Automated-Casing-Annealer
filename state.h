@@ -8,8 +8,7 @@
 struct state {
     String name;
     struct state_display {
-        // bool swap;
-        // int swap_offsets;
+        
         struct state_display_swap {
             bool value;
             int frame_period;

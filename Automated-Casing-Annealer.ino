@@ -2,7 +2,6 @@
 
 /*
 #include <Keypad.h>
-#include <LiquidCrystal.h>
 //#include <SD.h> //TODO for Backup of Settings over Powercycle
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -172,6 +171,7 @@ state active_state = {
 };
 
 void setup() {
+  // HardwareSerial* ser = new Serial(115200,SERIAL_8E1);
   Serial.begin(115200,SERIAL_8E1);
   //..
 }
@@ -179,7 +179,6 @@ void setup() {
 void loop() {
   int IR_Temperature = 700, Water_Temperature = 60, Session_Total_Count = 0;
   double Heating_Period = 1.0, Cooling_Period = 1.0;
-
   if(active_state.display.swap){
     display->DisplayMainScreen(
       active_state.display,
@@ -194,7 +193,6 @@ void loop() {
       "HP: ", Heating_Period,
       "#C: ", Session_Total_Count);
   }
-
   // display->Error();
   // while(true) {}
   //..

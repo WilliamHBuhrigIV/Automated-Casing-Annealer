@@ -1,10 +1,5 @@
 #ifndef DISPLAY_H
 #define DISPLAY_H
-
-////////////////////////////////////////////////////////////////////////////////
-/// 
-////////////////////////////////////////////////////////////////////////////////
-
 #include <LiquidCrystal.h>
 #include "state.h"
 
@@ -31,6 +26,7 @@ class Display {
             String tag_INFO_3, double INFO_3,
             String tag_INFO_4, int INFO_4
         );
+        void DisplayCommandScreen(String Command_String);
         // ..
     private:
         LiquidCrystal* display;
