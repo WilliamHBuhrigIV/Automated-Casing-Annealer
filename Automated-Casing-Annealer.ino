@@ -11,7 +11,8 @@ int IR_Temperature = 700, Water_Temperature = 60, Session_Total_Count = 0;
 double Heating_Period = 1.0, Cooling_Period = 1.0;
 
 state active_state = {
-  FLAGS::INITIAL,
+  REQUESTS::START,
+  { FLAGS::WAITING },
   { 1.0, 1.0, 20, 20, 0 },
   {
     true,
@@ -145,23 +146,35 @@ void setup() {
 }
 
 void loop() {
-  switch(active_state.flag) {
-    case FLAGS::INITIAL:
-      active_state.flag = FLAGS::PAUSING;
-    case FLAGS::PAUSING:
+  switch(active_state.request) {
+    case REQUESTS::START:
+      // ..
+      active_state.request = REQUESTS::PAUSED;
+    case REQUESTS::PAUSED:
       active_state.display.active.name = "PAUSED........";
+      active_state.opperation.flag = FLAGS::WAITING;
       break;
-    case FLAGS::COMMAND:
+    case REQUESTS::COMMAND:
       active_state.display.active.name = "COMMAND........";
+      if (active_state.opperation.flag == FLAGS::WAITING) {
+        // TEMP EVENTUALLY RETURN REQUEST WILL BE RECIEVIED
+        active_state.request = REQUESTS::START;
+        //
+        break;
+      }
+    case REQUESTS::OPERATE:
+      switch(active_state.opperation.flag) {
+        case FLAGS::HEATING:
+          break;
+        case FLAGS::COOLING:
+          break;
+        case FLAGS::WAITING:
+          break;
+      }
       break;
-    case FLAGS::HEATING:
-      active_state.display.active.name = "HEATING........";
-      break;
-    case FLAGS::COOLING:
-      active_state.display.active.name = "COOLING........";
-      break;
-    case FLAGS::HALTING:
-      active_state.display.active.name = "HALTING........";
+    case REQUESTS::ERROR:
+      active_state.display.active.name = "ERRORING........";
+      active_state.opperation.flag = FLAGS::ERRORING;
       display->Error();
       while(true) {};
   }
@@ -186,8 +199,8 @@ void loop() {
   if (key) {
     Serial.print(String(key));
   }
-  if (key == '6'){
-    active_state.flag = FLAGS::COMMAND;
+  if (key == '#'){
+    active_state.request = REQUESTS::COMMAND;
   }
 }
 

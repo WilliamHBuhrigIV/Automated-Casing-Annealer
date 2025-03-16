@@ -17,6 +17,7 @@ class InputPad {
             byte numCols
         );
         char GetKeyState();
+        void CommandSequence(state& active_state);
         // ..
     private:
         Keypad* keypad;
